@@ -1,0 +1,33 @@
+{
+  "name": "monaco-editor-nls-adapter",
+  "version": "1.0.0",
+  "description": "Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted)",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "loader.js",
+    "proxy.js",
+    "transform.js",
+    "vite-plugin.js",
+    "locales/*.json",
+    "README.md",
+    "README_zh.md"
+  ],
+  "keywords": [
+    "monaco-editor",
+    "nls",
+    "localization",
+    "internationalization",
+    "i18n",
+    "vite-plugin",
+    "webpack-loader"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "monaco-editor": ">= 0.50.0"
+  },
+  "dependencies": {}
+}
