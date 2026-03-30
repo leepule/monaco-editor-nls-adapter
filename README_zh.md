@@ -49,7 +49,26 @@ module.exports = {
 }
 ```
 
-### 2. Vite / Rollup (Plugin)
+### 2. Vue CLI (`vue.config.js`)
+
+对于使用 Vue CLI 的项目，建议使用 `chainWebpack` 进行配置：
+
+```javascript
+module.exports = {
+  chainWebpack: config => {
+    config.module
+      .rule('monaco-editor-nls')
+      .test(/\.js$/)
+      .include.add(/node_modules[\\/]monaco-editor[\\/]esm/)
+      .end()
+      .use('nls-loader')
+      .loader('monaco-editor-nls-adapter/loader')
+      .end();
+  }
+};
+```
+
+### 3. Vite / Rollup (Plugin)
 
 在 `vite.config.js` 中，添加此插件：
 

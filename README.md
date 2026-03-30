@@ -49,7 +49,26 @@ module.exports = {
 }
 ```
 
-### 2. Vite / Rollup (Plugin)
+### 2. Vue CLI (`vue.config.js`)
+
+For projects using Vue CLI, you can configure the loader via `chainWebpack`:
+
+```javascript
+module.exports = {
+  chainWebpack: config => {
+    config.module
+      .rule('monaco-editor-nls')
+      .test(/\.js$/)
+      .include.add(/node_modules[\\/]monaco-editor[\\/]esm/)
+      .end()
+      .use('nls-loader')
+      .loader('monaco-editor-nls-adapter/loader')
+      .end();
+  }
+};
+```
+
+### 3. Vite / Rollup (Plugin)
 
 In your `vite.config.js` or `vite.config.ts`:
 
