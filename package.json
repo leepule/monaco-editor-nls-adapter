@@ -24,8 +24,16 @@
     "vite-plugin",
     "webpack-loader"
   ],
-  "author": "",
+  "author": "leepule",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:leepule/monaco-editor-nls-adapter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leepule/monaco-editor-nls-adapter/issues"
+  },
+  "homepage": "https://github.com/leepule/monaco-editor-nls-adapter#readme",
   "peerDependencies": {
     "monaco-editor": ">= 0.50.0"
   },
