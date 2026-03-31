@@ -13,8 +13,10 @@ Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted). Bridge the g
 
 - **Self-hosted Locales**: No external CDN dependencies; all language data is bundled locally.
 - **Monaco 0.50.0+ Ready**: Fully compatible with the latest internal NLS signatures of Monaco Editor.
-- **SourceMap Support**: Powered by `magic-string` for accurate source-to-bundle mapping and worry-free debugging.
-- **Zero-Config Lazy Loading**: Support for asynchronous initialization with Webpack/Vite chunk splitting.
+- **SourceMap Support**: Powered by `magic-string` for accurate source-to-bundle mapping.
+- **Ultra-Optimized (Mini & Lite)**:
+  - **JSON Minification**: All locale files are pre-minified, reducing the stat size by ~15%.
+  - **Slim/Lite Export**: Use `./lite` for a zero-bloat experience with no dynamic scanning.
 - **TypeScript Support**: First-class TS definitions for an excellent developer experience.
 - **Flexible API**: Advanced interfaces like `getCurrentLocale` and `setMessages` (custom data).
 - **Cross-Bundler**: Native support for **Webpack** (Loader) and **Vite/Rollup** (Plugin).
@@ -110,6 +112,26 @@ export default defineConfig({
 });
 ```
 
+### 4. Bundle Optimization (Optional)
+
+If you are concerned about bundle size or the "Stat size" reported by bundle analyzers, you can use the **Lite Version**. 
+
+The default entry point uses dynamic `require`/`import` with template strings, which may cause build tools (Webpack/Vite) to scan and include all available locales or report a large "original size." The Lite version eliminates this by providing only the core logic.
+
+```javascript
+// 1. Import from /lite
+import { setMessages } from 'monaco-editor-nls-adapter/lite';
+
+// 2. Manually import ONLY the language you need
+import zhHans from 'monaco-editor-nls-adapter/locales/zh-hans.json';
+
+// 3. Initialize BEFORE monaco-editor loads
+setMessages(zhHans, 'zh-hans');
+
+// 4. Import monaco-editor as usual
+import * as monaco from 'monaco-editor';
+```
+
 ## 📖 Usage
 
 ### Initialization
@@ -150,10 +172,10 @@ See: [Framework Integration Best Practices (Examples)](./examples/framework-inte
 
 | Function | Description |
 | --- | --- |
-| `init(locale?: string): boolean` | Synchronous initialization. Tries to detect browser language if omitted. Returns success status. |
-| `initAsync(locale?: string): Promise<boolean>` | Asynchronous initialization with dynamic imports. Returns success status. |
+| `init(locale?: string): boolean` | Synchronous initialization. **Note**: This will trigger the bundler to scan all locales in the directory. |
+| `initAsync(locale?: string): Promise<boolean>` | Asynchronous initialization with dynamic imports. |
 | `getCurrentLocale(): string` | Returns the currently active locale code. Returns `custom` if set via `setMessages`. |
-| `setMessages(data: object)` | Manually inject translation data. Must follow Monaco's NLS structure. |
+| `setMessages(data: object, locale?: string)` | Manually inject translations. Recommended with `./lite` for minimum footprint. |
 | `vitePlugin(options?: object)` | Vite plugin function. |
 | `loader: string` | Absolute path to the Webpack loader. |
 

@@ -12,11 +12,14 @@ function monacoNlsPlugin(options = {}) {
     name: 'vite-plugin-monaco-nls-adapter',
     enforce: 'pre',
     transform(code, id) {
+      // 极致性能优化：第一层极速过滤，避免非目标文件的正则与替换开销
+      if (!id.endsWith('.js') || id.indexOf('monaco-editor') === -1) return
+
       // 统一路径格式
       const normalizedId = id.replace(/\\/g, '/')
       
-      // 快速过滤非目标文件
-      if (normalizedId.includes(monacoRoot) && normalizedId.endsWith('.js')) {
+      // 快速过滤非目标文件 (进一步细化)
+      if (normalizedId.includes(monacoRoot)) {
         const result = transform(code, id, options)
         
         // 如果 transform 返回的是对象 ({ code, map })，直接返回

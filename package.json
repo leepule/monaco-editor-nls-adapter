@@ -12,6 +12,10 @@
       "import": "./index.js",
       "require": "./index.js"
     },
+    "./lite": {
+      "import": "./lite.js",
+      "require": "./lite.js"
+    },
     "./proxy": {
       "types": "./proxy.d.ts",
       "require": "./proxy.js"
@@ -32,6 +36,7 @@
   },
   "files": [
     "index.js",
+    "lite.js",
     "index.d.ts",
     "loader.js",
     "proxy.js",
@@ -41,6 +46,10 @@
     "README.md",
     "README_zh.md"
   ],
+  "scripts": {
+    "minify-locales": "for f in locales/*.json; do jq -c . \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"; done",
+    "prepublishOnly": "npm run minify-locales"
+  },
   "keywords": [
     "monaco-editor",
     "nls",

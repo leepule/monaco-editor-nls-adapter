@@ -25,15 +25,21 @@ export function init(locale?: LocaleCode | string, force?: boolean): boolean;
 export function initAsync(locale?: LocaleCode | string, force?: boolean): Promise<boolean>;
 
 /**
- * 获取当前已生效的语言代码
+ * 获取当前已生效的语言代码名称
  */
-export function getCurrentLocale(): string;
+export function getLocaleName(): string;
+
+/**
+ * 获取当前加载的原始翻译数据
+ */
+export function getLocaleData(): Record<string, any> | null;
 
 /**
  * 手动设置翻译数据字典
  * @param messages 符合 Monaco NLS 格式的 JSON 对象
+ * @param locale 语言代码 (可选标识符)
  */
-export function setMessages(messages: Record<string, any>): void;
+export function setMessages(messages: Record<string, any>, locale?: string): void;
 
 /**
  * NLS 代理对象声明

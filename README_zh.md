@@ -15,6 +15,9 @@
 - **适配 Monaco 0.50.0+**: 完全兼容 Monaco Editor 最新的内部 NLS 调用签名。
 - **性能优化 (懒加载)**: 通过 Webpack/Vite 的动态导入实现按需分包加载。
 - **SourceMap 支持**: 基于 `magic-string` 实现转换后的精准还原，调试无忧。
+- **极致优化 (Mini & Lite)**: 
+  - **内置 JSON 压缩**: 所有语言包均已移除空格，Stat size 减少约 15%。
+  - **Slim/Lite 导出**: 提供 `./lite` 入口，不包含动态加载逻辑，可实现 **0 冗余** 打包。
 - **TypeScript 支持**: 完善的类型定义，为开发提供极佳的智能感知。
 - **灵活的 API**: 提供 `getCurrentLocale` 和 `setMessages` (自定义数据) 等高级接口。
 - **跨构建工具支持**: 原生支持 **Webpack** (Loader) 以及 **Vite/Rollup** (Plugin)。
@@ -110,6 +113,26 @@ export default defineConfig({
 });
 ```
 
+### 4. 极致体积优化 (可选)
+
+如果你对打包后的 JS 文件体积非常敏感，或者 bundle analyzer 显示 `monaco-editor-nls-adapter` 的 `Stat size` 过大（这是由于默认入口包含所有语言包的动态引用导致的），可以使用 **Lite 版本**。
+
+Lite 版本不具备内置的语言包发现逻辑，需要你手动导入所需的语言 JSON。这样构建工具（Webpack/Vite）只会打包你真正使用的那门语言，而不会扫描整个 `./locales` 目录。
+
+```javascript
+// 1. 从 /lite 入口导入
+import { setMessages } from 'monaco-editor-nls-adapter/lite';
+
+// 2. 手动导入特定的语言 JSON (由你自己决定包含哪门语言)
+import zhHans from 'monaco-editor-nls-adapter/locales/zh-hans.json';
+
+// 3. 初始化 (必须要在 monaco 加载前运行)
+setMessages(zhHans, 'zh-hans');
+
+// 4. 正常使用 monaco-editor
+import * as monaco from 'monaco-editor';
+```
+
 ## 📖 使用指南
 
 ### 初始化
@@ -150,10 +173,10 @@ import * as monaco from 'monaco-editor';
 
 | 函数 | 说明 |
 | --- | --- |
-| `init(locale?: string): boolean` | 同步初始化。如果不传参数，尝试探测浏览器语言。返回是否加载成功。 |
-| `initAsync(locale?: string): Promise<boolean>` | 异步初始化。利用动态 import 拆分语言包。返回是否加载成功。 |
+| `init(locale?: string): boolean` | 同步初始化。如果不传参数，尝试探测浏览器语言。注意：此方法会导致构建工具引入全量语言包（或触发全量扫描）。 |
+| `initAsync(locale?: string): Promise<boolean>` | 异步初始化。利用动态 import 拆分语言包。 |
 | `getCurrentLocale(): string` | 获取当前已生效的语言代码。如果是自定义数据，返回 `custom`。 |
-| `setMessages(data: object)` | 手动注入翻译字典。格式需符合 Monaco 的 NLS 结构。 |
+| `setMessages(data: object, locale?: string)` | 手动注入翻译字典。建议配合 `./lite` 入口使用以优化体积。 |
 | `vitePlugin(options?: object)` | Vite 插件函数。 |
 | `loader: string` | Webpack Loader 的绝对路径。 |
 

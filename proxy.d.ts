@@ -16,7 +16,13 @@ export interface NLSProxy {
   localize2(path: string, data: any, defaultMessage: string, ...args: any[]): { value: string; original: string };
 
   /** 设置当前活跃的语言包内容 */
-  setLocaleData(data: Record<string, any>): void;
+  setLocaleData(data: Record<string, any>, locale?: string): void;
+
+  /** 获取底层已加载的字典数据 */
+  getLocaleData(): Record<string, any> | null;
+
+  /** 获取当前活跃的语言名称 */
+  getLocaleName(): string;
 
   /** 获取底层配置的默认语言 (通常返回 undefined 以保持隔离) */
   getConfiguredDefaultLocale(): string | undefined;

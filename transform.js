@@ -41,20 +41,21 @@ function transform(source, id, options = {}) {
     const proxyPath = 'monaco-editor-nls-adapter/proxy'
 
     // 2. 替换对 nls.js 的引用 (处理 import 和 require)
-    const nlsImportRegex = /(import\s+.*?\s+from\s+['"])(.*?\/nls\.js)(['"])/g
     let match
-    while ((match = nlsImportRegex.exec(source)) !== null) {
+    // 重置全局正则的 lastIndex
+    NLS_IMPORT_REGEX.lastIndex = 0
+    while ((match = NLS_IMPORT_REGEX.exec(source)) !== null) {
       s.overwrite(match.index + match[1].length, match.index + match[1].length + match[2].length, proxyPath)
     }
 
-    const nlsRequireRegex = /(require\(['"])(.*?\/nls\.js)(['"]\))/g
-    while ((match = nlsRequireRegex.exec(source)) !== null) {
+    NLS_REQUIRE_REGEX.lastIndex = 0
+    while ((match = NLS_REQUIRE_REGEX.exec(source)) !== null) {
       s.overwrite(match.index + match[1].length, match.index + match[1].length + match[2].length, proxyPath)
     }
 
     // 3. 在 localize 和 localize2 调用中注入路径作为第一个参数
-    const localizeRegex = /nls\.localize(\d?)\(/g
-    while ((match = localizeRegex.exec(source)) !== null) {
+    LOCALIZE_REGEX.lastIndex = 0
+    while ((match = LOCALIZE_REGEX.exec(source)) !== null) {
       // 在 '(' 之后插入路径参数
       s.appendLeft(match.index + match[0].length, `'${modulePath}', `)
     }
