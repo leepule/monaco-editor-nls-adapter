@@ -14,9 +14,23 @@
 - **自托管语言包**: 无需依赖外部 CDN；所有语言数据在本地打包。
 - **适配 Monaco 0.50.0+**: 完全兼容 Monaco Editor 最新的内部 NLS 调用签名。
 - **性能优化 (懒加载)**: 通过 Webpack/Vite 的动态导入实现按需分包加载。
+- **SourceMap 支持**: 基于 `magic-string` 实现转换后的精准还原，调试无忧。
 - **TypeScript 支持**: 完善的类型定义，为开发提供极佳的智能感知。
-- **智能语言识别**: 支持自动识别浏览器语言或手动切换。
+- **灵活的 API**: 提供 `getCurrentLocale` 和 `setMessages` (自定义数据) 等高级接口。
 - **跨构建工具支持**: 原生支持 **Webpack** (Loader) 以及 **Vite/Rollup** (Plugin)。
+- **智能路径探测**: 自动识别 `pnpm` 和 monorepo 路径，**零配置**即可使用。
+- **轻量化**: 移除了冗余测试文件，发布包体积进一步精简。
+
+## 📦 支持的框架
+
+本适配器与主流前端框架均可完美兼容：
+
+- **Vue 2**: 完美适配 Vue CLI 和 Webpack 项目。
+- **Vue 3**: 深度支持 Vite 和 Vue CLI 配置。
+- **React**: 适配原生 React 应用及 `@monaco-editor/react` (支持禁用 CDN)。
+- **Angular**: 支持 Angular CLI (Webpack/Vite) 构建环境。
+- **SSR 框架**: 兼容 **Next.js** 和 **Nuxt** 等服务端渲染环境。
+- **通用**: 理论上支持任何基于 **Webpack**、**Vite** 或 **Rollup** 构建的 web 项目。
 
 ## 🚀 安装
 
@@ -31,16 +45,23 @@ npm install monaco-editor-nls-adapter
 在 `webpack.config.js` 中，添加此适配器的 loader 来处理 Monaco Editor 的 ESM 源码。
 
 ```javascript
+const { loader } = require('monaco-editor-nls-adapter');
+
 module.exports = {
   module: {
     rules: [
       {
         test: /\.js$/,
-        // 重要：仅处理 monaco-editor 的 esm 目录，避免对业务代码产生副作用
-        include: /node_modules[\\/]monaco-editor[\\/]esm/,
+        // 重要：仅处理 monaco-editor 的 esm 目录
+        include: /monaco-editor[\\/]esm/,
         use: [
           {
-            loader: 'monaco-editor-nls-adapter/loader'
+            loader: loader,
+            options: {
+              // 可选：自定义 monaco 路径片段
+              // 插件会自动探测 node_modules 下的 monaco-editor/esm，通常无需配置
+              // monacoPath: 'monaco-editor/esm'
+            }
           }
         ]
       }
@@ -54,15 +75,17 @@ module.exports = {
 对于使用 Vue CLI 的项目，建议使用 `chainWebpack` 进行配置：
 
 ```javascript
+const { loader } = require('monaco-editor-nls-adapter');
+
 module.exports = {
   chainWebpack: config => {
     config.module
       .rule('monaco-editor-nls')
       .test(/\.js$/)
-      .include.add(/node_modules[\\/]monaco-editor[\\/]esm/)
+      .include.add(/monaco-editor[\\/]esm/)
       .end()
       .use('nls-loader')
-      .loader('monaco-editor-nls-adapter/loader')
+      .loader(loader)
       .end();
   }
 };
@@ -74,11 +97,15 @@ module.exports = {
 
 ```javascript
 import { defineConfig } from 'vite';
-import monacoNlsPlugin from 'monaco-editor-nls-adapter/vite-plugin';
+import { vitePlugin } from 'monaco-editor-nls-adapter';
 
 export default defineConfig({
   plugins: [
-    monacoNlsPlugin()
+    vitePlugin({
+      // 可选：自定义 monaco 路径片段
+      // 插件会自动探测物理路径（支持 pnpm），通常无需配置
+      // monacoPath: 'monaco-editor/esm'
+    })
   ]
 });
 ```
@@ -89,34 +116,46 @@ export default defineConfig({
 
 在导入 `monaco-editor` 或创建任何实例**之前**，先调用 `init` 或 `initAsync`。
 
-```typescript
 import * as nlsAdapter from 'monaco-editor-nls-adapter';
 
-/**
- * 方式 1: 同步初始化 (标准用法)
- * 适用于语言包体量较小，或不介意首屏全量包含翻译数据的场景。
- */
+// 1. 同步初始化 (标准用法)
 nlsAdapter.init('zh-hans');
 
-/**
- * 方式 2: 异步初始化 (性能优化推荐)
- * 利用 Webpack/Vite 的动态 import 实现分包，仅加载当前所需语言。
- */
+// 2. 异步初始化 (分包懒加载)
 // await nlsAdapter.initAsync('zh-hans');
 
-/**
- * 方式 3: 自动识别浏览器语言
- */
-// nlsAdapter.init(); // 同步
-// await nlsAdapter.initAsync(); // 异步
+// 3. 获取当前语言
+console.log(nlsAdapter.getCurrentLocale()); // 'zh-hans'
+
+// 4. 使用自定义翻译数据 (不使用内置语言包)
+/*
+nlsAdapter.setMessages({
+  'vs/editor/common/editorContextKeys': {
+    'editor.action.clipboardCopyAction': '复制 (Custom)'
+  }
+});
+*/
 
 import * as monaco from 'monaco-editor';
-
-monaco.editor.create(document.getElementById('container'), {
-  value: 'console.log("Hello Localization!");',
-  language: 'javascript'
-});
+// ... 之后正常创建编辑器
 ```
+
+### 框架集成 (React / Vue)
+
+本项目与主流框架完美配合。特别注意：若使用 **React** (@monaco-editor/react)，请务必通过 `loader.config({ monaco })` 禁用 CDN 并映射到本地实例。
+
+详细的框架集成指南请参考：[框架集成最佳实践 (Examples)](./examples/framework-integration.md)
+
+### API 详述
+
+| 函数 | 说明 |
+| --- | --- |
+| `init(locale?: string): boolean` | 同步初始化。如果不传参数，尝试探测浏览器语言。返回是否加载成功。 |
+| `initAsync(locale?: string): Promise<boolean>` | 异步初始化。利用动态 import 拆分语言包。返回是否加载成功。 |
+| `getCurrentLocale(): string` | 获取当前已生效的语言代码。如果是自定义数据，返回 `custom`。 |
+| `setMessages(data: object)` | 手动注入翻译字典。格式需符合 Monaco 的 NLS 结构。 |
+| `vitePlugin(options?: object)` | Vite 插件函数。 |
+| `loader: string` | Webpack Loader 的绝对路径。 |
 
 ## 🗂 支持的语言列表
 

@@ -1,37 +1,73 @@
-const MONACO_ESM_ROOT = 'node_modules/monaco-editor/esm/'
+const MagicString = require('magic-string')
+
+let CACHED_MONACO_ROOT = null
 
 /**
  * 转换 Monaco Editor 源代码以注入本地化路径
  * @param {string} source 源代码内容
  * @param {string} id 文件路径 (resourcePath 或 vite id)
- * @returns {string} 转换后的代码
+ * @param {Object} options 配置项
+ * @param {string} options.monacoPath 匹配 Monaco Editor 的路径片段，默认为 'monaco-editor/esm'
+ * @returns {Object|string} 转换后的对象 { code, map } 或原始字符串
  */
-function transform(source, id) {
+function transform(source, id, options = {}) {
   // 统一路径分隔符
   const resourcePath = id.replace(/\\/g, '/')
+  let monacoRoot = options.monacoPath || 'monaco-editor/esm'
 
-  if (resourcePath.includes(MONACO_ESM_ROOT)) {
-    // 1. 计算 Monaco 模块路径 (例如 vs/editor/common/editorContextKeys)
-    const startIndex = resourcePath.indexOf(MONACO_ESM_ROOT) + MONACO_ESM_ROOT.length
-    const modulePath = resourcePath.substring(startIndex).replace('.js', '')
+  // 4. 自动路径探测增强：如果是默认路径且在 node_modules 中，尝试自动定位物理路径
+  if (monacoRoot === 'monaco-editor/esm' && !CACHED_MONACO_ROOT) {
+    try {
+      // 尝试自动定位 monaco-editor 的安装目录 (适配 pnpm, npm, yarn)
+      const pkgPath = require.resolve('monaco-editor/package.json', { paths: [process.cwd()] })
+      CACHED_MONACO_ROOT = pkgPath.replace(/\\/g, '/').replace('package.json', 'esm')
+    } catch (e) {
+      // 容错：如果无法解析，则暂时保持原样
+    }
+  }
 
-    // 2. 将 NLS 引用重定向到本包的代理 (proxy) 文件
+  // 优先匹配物理路径，否则回退到特征字符串匹配
+  const matchPath = CACHED_MONACO_ROOT || monacoRoot
+
+  if (resourcePath.includes(matchPath)) {
+    // 计算模块路径 (相对于 esm 目录)
+    const lastIndex = resourcePath.lastIndexOf(matchPath)
+    const startIndex = lastIndex + matchPath.length + 1
+    const modulePath = resourcePath.substring(startIndex).replace(/\.js$/, '')
+
+    if (!modulePath || modulePath.includes('node_modules')) return source
+
+    const s = new MagicString(source)
     const proxyPath = 'monaco-editor-nls-adapter/proxy'
-    
-    // 替换对 nls.js 的引用
-    source = source.replace(/import\s+\*\s+as\s+nls\s+from\s+['"].*?\/nls\.js['"]/g, `import * as nls from '${proxyPath}'`)
-    source = source.replace(/require\(['"].*?\/nls\.js['"]\)/g, `require('${proxyPath}')`)
+
+    // 2. 替换对 nls.js 的引用 (处理 import 和 require)
+    const nlsImportRegex = /(import\s+.*?\s+from\s+['"])(.*?\/nls\.js)(['"])/g
+    let match
+    while ((match = nlsImportRegex.exec(source)) !== null) {
+      s.overwrite(match.index + match[1].length, match.index + match[1].length + match[2].length, proxyPath)
+    }
+
+    const nlsRequireRegex = /(require\(['"])(.*?\/nls\.js)(['"]\))/g
+    while ((match = nlsRequireRegex.exec(source)) !== null) {
+      s.overwrite(match.index + match[1].length, match.index + match[1].length + match[2].length, proxyPath)
+    }
 
     // 3. 在 localize 和 localize2 调用中注入路径作为第一个参数
-    // 注意：只替换调用，不改变原始代码逻辑
-    source = source.replace(/nls\.localize\(/g, `nls.localize('${modulePath}', `)
-    source = source.replace(/nls\.localize2\(/g, `nls.localize2('${modulePath}', `)
+    const localizeRegex = /nls\.localize(\d?)\(/g
+    while ((match = localizeRegex.exec(source)) !== null) {
+      // 在 '(' 之后插入路径参数
+      s.appendLeft(match.index + match[0].length, `'${modulePath}', `)
+    }
+
+    return {
+      code: s.toString(),
+      map: s.generateMap({ hires: true, source: id, includeContent: true })
+    }
   }
 
   return source
 }
 
 module.exports = {
-  transform,
-  MONACO_ESM_ROOT
+  transform
 }

@@ -1,20 +1,32 @@
-const { transform, MONACO_ESM_ROOT } = require('./transform')
+const { transform } = require('./transform')
 
 /**
  * Vite Plugin for Monaco Editor NLS Adapter
- * Supports both development and production builds.
+ * @param {Object} options 插件配置
+ * @param {string} options.monacoPath 匹配 Monaco Editor ESM 路径的特征字符串，默认为 'monaco-editor/esm'
  */
-function monacoNlsPlugin() {
+function monacoNlsPlugin(options = {}) {
+  const monacoRoot = options.monacoPath || 'monaco-editor/esm'
+  
   return {
     name: 'vite-plugin-monaco-nls-adapter',
-    // 强制此插件在代码压缩和混淆之前执行
     enforce: 'pre',
     transform(code, id) {
-      // 检查是否是 Monaco Editor 的 ESM 源码文件
-      if (id.replace(/\\/g, '/').includes(MONACO_ESM_ROOT)) {
+      // 统一路径格式
+      const normalizedId = id.replace(/\\/g, '/')
+      
+      // 快速过滤非目标文件
+      if (normalizedId.includes(monacoRoot) && normalizedId.endsWith('.js')) {
+        const result = transform(code, id, options)
+        
+        // 如果 transform 返回的是对象 ({ code, map })，直接返回
+        if (result && typeof result === 'object') {
+          return result
+        }
+        
+        // 否则返回原始代码
         return {
-          code: transform(code, id),
-          // 返回原始 map 或 null，由于是简单的正则匹配转换，不处理 SourceMap
+          code: result || code,
           map: null
         }
       }

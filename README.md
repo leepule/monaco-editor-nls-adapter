@@ -13,10 +13,24 @@ Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted). Bridge the g
 
 - **Self-hosted Locales**: No external CDN dependencies; all language data is bundled locally.
 - **Monaco 0.50.0+ Ready**: Fully compatible with the latest internal NLS signatures of Monaco Editor.
+- **SourceMap Support**: Powered by `magic-string` for accurate source-to-bundle mapping and worry-free debugging.
 - **Zero-Config Lazy Loading**: Support for asynchronous initialization with Webpack/Vite chunk splitting.
 - **TypeScript Support**: First-class TS definitions for an excellent developer experience.
-- **Smart Detection**: Automatically detect browser language or manually switch as needed.
+- **Flexible API**: Advanced interfaces like `getCurrentLocale` and `setMessages` (custom data).
 - **Cross-Bundler**: Native support for **Webpack** (Loader) and **Vite/Rollup** (Plugin).
+- **Zero Configuration**: Automatic detection of `pnpm` and monorepo paths out of the box.
+- **Ultra-lightweight**: Redundant test files removed for even faster installation.
+
+## 📦 Supported Frameworks
+
+This adapter is compatible with all modern frontend frameworks:
+
+- **Vue 2**: Seamless integration with Vue CLI and Webpack projects.
+- **Vue 3**: Full support for Vite and Vue CLI configurations.
+- **React**: Compatible with native React apps and `@monaco-editor/react` (supports disabling CDN).
+- **Angular**: Compatible with Angular CLI (Webpack/Vite) build environments.
+- **SSR Frameworks**: Ready for **Next.js** and **Nuxt** server-side rendering environments.
+- **Universal**: Theoretically supports any web project built with **Webpack**, **Vite**, or **Rollup**.
 
 ## 🚀 Installation
 
@@ -31,16 +45,23 @@ npm install monaco-editor-nls-adapter
 In your `webpack.config.js`, add the adapter's loader to process Monaco Editor's ESM files.
 
 ```javascript
+const { loader } = require('monaco-editor-nls-adapter');
+
 module.exports = {
   module: {
     rules: [
       {
         test: /\.js$/,
-        // Crucial: Only process monaco-editor core files to avoid side effects
-        include: /node_modules[\\/]monaco-editor[\\/]esm/,
+        // Crucial: Only process monaco-editor ESM files
+        include: /monaco-editor[\\/]esm/,
         use: [
           {
-            loader: 'monaco-editor-nls-adapter/loader'
+            loader: loader,
+            options: {
+              // Optional: Custom monaco path fragment
+              // Detected automatically in most project structures (npm, pnpm, yarn)
+              // monacoPath: 'monaco-editor/esm'
+            }
           }
         ]
       }
@@ -54,15 +75,17 @@ module.exports = {
 For projects using Vue CLI, you can configure the loader via `chainWebpack`:
 
 ```javascript
+const { loader } = require('monaco-editor-nls-adapter');
+
 module.exports = {
   chainWebpack: config => {
     config.module
       .rule('monaco-editor-nls')
       .test(/\.js$/)
-      .include.add(/node_modules[\\/]monaco-editor[\\/]esm/)
+      .include.add(/monaco-editor[\\/]esm/)
       .end()
       .use('nls-loader')
-      .loader('monaco-editor-nls-adapter/loader')
+      .loader(loader)
       .end();
   }
 };
@@ -74,11 +97,15 @@ In your `vite.config.js` or `vite.config.ts`:
 
 ```javascript
 import { defineConfig } from 'vite';
-import monacoNlsPlugin from 'monaco-editor-nls-adapter/vite-plugin';
+import { vitePlugin } from 'monaco-editor-nls-adapter';
 
 export default defineConfig({
   plugins: [
-    monacoNlsPlugin()
+    vitePlugin({
+      // Optional: Custom monaco path fragment
+      // Automatically detected (works with pnpm and monorepos)
+      // monacoPath: 'monaco-editor/esm'
+    })
   ]
 });
 ```
@@ -89,34 +116,46 @@ export default defineConfig({
 
 Call `init` or `initAsync` **before** importing `monaco-editor` or creating any editor instances.
 
-```typescript
 import * as nlsAdapter from 'monaco-editor-nls-adapter';
 
-/**
- * Option 1: Synchronous (Standard)
- * Recommended for small clusters or if you don't mind the initial bundle size.
- */
+// 1. Synchronous (Standard)
 nlsAdapter.init('zh-hans');
 
-/**
- * Option 2: Asynchronous (Performance Optimization)
- * Leverages Webpack/Vite dynamic imports for code splitting.
- */
+// 2. Asynchronous (Code Splitting)
 // await nlsAdapter.initAsync('zh-hans');
 
-/**
- * Option 3: Automatic Browser Detection
- */
-// nlsAdapter.init(); // Sync
-// await nlsAdapter.initAsync(); // Async
+// 3. Get current locale
+console.log(nlsAdapter.getCurrentLocale()); // 'zh-hans'
+
+// 4. Custom Messages (Override built-in locales)
+/*
+nlsAdapter.setMessages({
+  'vs/editor/common/editorContextKeys': {
+    'editor.action.clipboardCopyAction': 'Copy (Custom)'
+  }
+});
+*/
 
 import * as monaco from 'monaco-editor';
-
-monaco.editor.create(document.getElementById('container'), {
-  value: 'console.log("Hello Localization!");',
-  language: 'javascript'
-});
+// ... create editor as usual
 ```
+
+### Framework Integration (React / Vue)
+
+This package works seamlessly with major frameworks. Special note for **React** (@monaco-editor/react): Make sure to use `loader.config({ monaco })` to disable CDN and map to your local, localized monaco instance.
+
+See: [Framework Integration Best Practices (Examples)](./examples/framework-integration.md)
+
+### API Reference
+
+| Function | Description |
+| --- | --- |
+| `init(locale?: string): boolean` | Synchronous initialization. Tries to detect browser language if omitted. Returns success status. |
+| `initAsync(locale?: string): Promise<boolean>` | Asynchronous initialization with dynamic imports. Returns success status. |
+| `getCurrentLocale(): string` | Returns the currently active locale code. Returns `custom` if set via `setMessages`. |
+| `setMessages(data: object)` | Manually inject translation data. Must follow Monaco's NLS structure. |
+| `vitePlugin(options?: object)` | Vite plugin function. |
+| `loader: string` | Absolute path to the Webpack loader. |
 
 ## 🗂 Supported Locales
 

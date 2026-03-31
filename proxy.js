@@ -10,19 +10,18 @@ function _format(message, args) {
     return message
   }
   return String(message).replace(/\{(\d+)\}/g, function (match, rest) {
-    const index = rest[0]
+    const index = parseInt(rest, 10)
     return typeof args[index] !== 'undefined' ? args[index] : match
   })
 }
 
 function localize(path, data, defaultMessage, ...args) {
-  // 针对 Monaco 0.50.0 签名的参数修正：
-  // 1. 当通过 loader 调用时，path 是被注入的。
-  // 2. 当通过 create 调用时，path 也会被显式作为第一个参数传入。
   const key = (data && typeof data === 'object') ? data.key : data
   const localeData = CURRENT_LOCALE_DATA || {}
   
-  let message = (localeData[path] || {})[key]
+  const fileData = localeData[path] || {}
+  let message = fileData[key]
+  
   // 强化回退逻辑：如果翻译为空或未找到，则回退到默认消息
   if (message === undefined || message === null || message === '') {
     message = defaultMessage

@@ -3,7 +3,33 @@
   "version": "1.0.1",
   "description": "Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted)",
   "main": "index.js",
+  "module": "index.js",
   "types": "index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.js"
+    },
+    "./proxy": {
+      "types": "./proxy.d.ts",
+      "require": "./proxy.js"
+    },
+    "./loader": {
+      "types": "./loader.d.ts",
+      "require": "./loader.js"
+    },
+    "./vite-plugin": {
+      "types": "./vite-plugin.d.ts",
+      "require": "./vite-plugin.js"
+    },
+    "./transform": {
+      "types": "./transform.d.ts",
+      "require": "./transform.js"
+    },
+    "./locales/*": "./locales/*"
+  },
   "files": [
     "index.js",
     "index.d.ts",
@@ -11,7 +37,7 @@
     "proxy.js",
     "transform.js",
     "vite-plugin.js",
-    "locales/*.json",
+    "locales/",
     "README.md",
     "README_zh.md"
   ],
@@ -37,5 +63,7 @@
   "peerDependencies": {
     "monaco-editor": ">= 0.50.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "magic-string": "^0.30.0"
+  }
 }
