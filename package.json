@@ -1,6 +1,6 @@
 {
   "name": "monaco-editor-nls-adapter",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted)",
   "main": "index.js",
   "module": "index.js",
