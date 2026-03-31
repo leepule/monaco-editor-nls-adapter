@@ -3,9 +3,12 @@
  * 此文件通过注入 path 参数，替代了对原本 'monaco-editor-nls/vscode-nls' 的内部依赖方式。
  */
 
-// 状态变量，记录当前的语言数据和代码
-let CURRENT_LOCALE_DATA = null
-let CURRENT_LOCALE_NAME = ''
+// 使用全局对象存储状态，确保在多实例或多版本共存时（如多版本依赖嵌套）状态依然同步
+const globalObj = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : global)
+globalObj.__MONACO_NLS_ADAPTER_STATE__ = globalObj.__MONACO_NLS_ADAPTER_STATE__ || { data: null, name: '' }
+
+// 辅助访问器
+const getState = () => globalObj.__MONACO_NLS_ADAPTER_STATE__
 
 // 提前编译正则表达式以提升运行时性能
 const FORMAT_REGEX = /\{(\d+)\}/g
@@ -34,9 +37,10 @@ function _format(message, args) {
  */
 function localize(path, data, defaultMessage, ...args) {
   const key = (data && typeof data === 'object') ? data.key : data
+  const state = getState()
   
   // 优化点：使用可选链或短路评估快速定位翻译
-  const fileData = (CURRENT_LOCALE_DATA && CURRENT_LOCALE_DATA[path])
+  const fileData = (state.data && state.data[path])
   const message = fileData ? fileData[key] : undefined
   
   // 强化回退逻辑：如果翻译为空或未找到，则回退到默认消息
@@ -60,22 +64,23 @@ function localize2(path, data, defaultMessage, ...args) {
  * @param {string} locale 语言代码
  */
 function setLocaleData(data, locale = 'custom') {
-  CURRENT_LOCALE_DATA = data
-  CURRENT_LOCALE_NAME = locale
+  const state = getState()
+  state.data = data
+  state.name = locale
 }
 
 /**
  * 获取当前已加载的完整字典数据
  */
 function getLocaleData() {
-  return CURRENT_LOCALE_DATA
+  return getState().data
 }
 
 /**
  * 获取当前生效的语言名称
  */
 function getLocaleName() {
-  return CURRENT_LOCALE_NAME
+  return getState().name
 }
 
 // 以下为适配 monaco-editor 内部调用的兼容性 Shim 函数

@@ -1,10 +1,24 @@
 const proxy = require('./proxy')
 
 /**
- * 获取当前已生效的语言代码
+ * 获取当前已生效的语言代码名称 (向后兼容)
  */
 function getCurrentLocale() {
   return proxy.getLocaleName()
+}
+
+/**
+ * 获取当前已生效的语言名称
+ */
+function getLocaleName() {
+  return proxy.getLocaleName()
+}
+
+/**
+ * 获取当前加载的原始翻译数据
+ */
+function getLocaleData() {
+  return proxy.getLocaleData()
 }
 
 /**
@@ -17,10 +31,12 @@ function setMessages(data, locale = 'custom') {
 }
 
 module.exports = {
-  getCurrentLocale: getCurrentLocale,
-  setMessages: setMessages,
+  getCurrentLocale,
+  getLocaleName,
+  getLocaleData,
+  setMessages,
   setLocaleData: proxy.setLocaleData,
-  proxy: proxy,
+  proxy,
   // 插件导出 (仍保留，以便用户可以从 lite 引用所有工具)
   vitePlugin: require('./vite-plugin'),
   loader: __dirname + '/loader.js'

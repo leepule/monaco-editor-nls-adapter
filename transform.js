@@ -2,13 +2,13 @@ const MagicString = require('magic-string')
 
 let CACHED_MONACO_ROOT = null
 
+// 提前编译正则表达式以提升运行时性能
+const NLS_IMPORT_REGEX = /(import\s+.*?\s+from\s+['"])(.*?\/nls\.js)(['"])/g
+const NLS_REQUIRE_REGEX = /(require\(['"])(.*?\/nls\.js)(['"]\))/g
+const LOCALIZE_REGEX = /nls\.localize(\d?)\(/g
+
 /**
  * 转换 Monaco Editor 源代码以注入本地化路径
- * @param {string} source 源代码内容
- * @param {string} id 文件路径 (resourcePath 或 vite id)
- * @param {Object} options 配置项
- * @param {string} options.monacoPath 匹配 Monaco Editor 的路径片段，默认为 'monaco-editor/esm'
- * @returns {Object|string} 转换后的对象 { code, map } 或原始字符串
  */
 function transform(source, id, options = {}) {
   // 统一路径分隔符

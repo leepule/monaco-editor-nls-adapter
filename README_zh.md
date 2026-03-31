@@ -22,6 +22,7 @@
 - **灵活的 API**: 提供 `getCurrentLocale` 和 `setMessages` (自定义数据) 等高级接口。
 - **跨构建工具支持**: 原生支持 **Webpack** (Loader) 以及 **Vite/Rollup** (Plugin)。
 - **智能路径探测**: 自动识别 `pnpm` 和 monorepo 路径，**零配置**即可使用。
+- **环境鲁棒性**: 内置全局单例状态管理，支持微前端和多版本依赖嵌套场景。
 - **轻量化**: 移除了冗余测试文件，发布包体积进一步精简。
 
 ## 📦 支持的框架
@@ -175,8 +176,11 @@ import * as monaco from 'monaco-editor';
 | --- | --- |
 | `init(locale?: string): boolean` | 同步初始化。如果不传参数，尝试探测浏览器语言。注意：此方法会导致构建工具引入全量语言包（或触发全量扫描）。 |
 | `initAsync(locale?: string): Promise<boolean>` | 异步初始化。利用动态 import 拆分语言包。 |
-| `getCurrentLocale(): string` | 获取当前已生效的语言代码。如果是自定义数据，返回 `custom`。 |
+| `getLocaleName(): string` | [新] 获取当前生效的语言代码名称（如 'zh-hans'）。 |
+| `getLocaleData(): object` | [新] 获取当前已加载的完整本地化字典对象。 |
+| `getCurrentLocale(): string` | 获取当前已生效的语言代码（`getLocaleName` 的存量别名）。 |
 | `setMessages(data: object, locale?: string)` | 手动注入翻译字典。建议配合 `./lite` 入口使用以优化体积。 |
+| `setLocaleData(data: object, locale?: string)` | 同 `setMessages`，直接将数据注入代理层。 |
 | `vitePlugin(options?: object)` | Vite 插件函数。 |
 | `loader: string` | Webpack Loader 的绝对路径。 |
 

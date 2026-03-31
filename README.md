@@ -21,6 +21,7 @@ Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted). Bridge the g
 - **Flexible API**: Advanced interfaces like `getCurrentLocale` and `setMessages` (custom data).
 - **Cross-Bundler**: Native support for **Webpack** (Loader) and **Vite/Rollup** (Plugin).
 - **Zero Configuration**: Automatic detection of `pnpm` and monorepo paths out of the box.
+- **Resilient**: Global singleton state for micro-frontends and nested dependency environments.
 - **Ultra-lightweight**: Redundant test files removed for even faster installation.
 
 ## 📦 Supported Frameworks
@@ -174,8 +175,11 @@ See: [Framework Integration Best Practices (Examples)](./examples/framework-inte
 | --- | --- |
 | `init(locale?: string): boolean` | Synchronous initialization. **Note**: This will trigger the bundler to scan all locales in the directory. |
 | `initAsync(locale?: string): Promise<boolean>` | Asynchronous initialization with dynamic imports. |
-| `getCurrentLocale(): string` | Returns the currently active locale code. Returns `custom` if set via `setMessages`. |
+| `getLocaleName(): string` | [New] Returns the currently active locale code name (e.g., 'zh-hans'). |
+| `getLocaleData(): object` | [New] Returns the current raw translation dictionary object. |
+| `getCurrentLocale(): string` | Returns the currently active locale (alias for `getLocaleName`). |
 | `setMessages(data: object, locale?: string)` | Manually inject translations. Recommended with `./lite` for minimum footprint. |
+| `setLocaleData(data: object, locale?: string)` | Alias to `setMessages`. Sets the locale data into the proxy directly. |
 | `vitePlugin(options?: object)` | Vite plugin function. |
 | `loader: string` | Absolute path to the Webpack loader. |
 
