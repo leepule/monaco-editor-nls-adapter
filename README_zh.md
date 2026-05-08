@@ -114,24 +114,41 @@ export default defineConfig({
 });
 ```
 
-### 4. 极致体积优化 (可选)
+### 4. 语言包按需打包 (推荐优化方案)
 
-如果你对打包后的 JS 文件体积非常敏感，或者 bundle analyzer 显示 `monaco-editor-nls-adapter` 的 `Stat size` 过大（这是由于默认入口包含所有语言包的动态引用导致的），可以使用 **Lite 版本**。
+默认情况下，由于 `index.js` 包含动态引用，构建工具可能会扫描并打包 `./locales` 目录下的所有语言文件（Stat size 较大）。
 
-Lite 版本不具备内置的语言包发现逻辑，需要你手动导入所需的语言 JSON。这样构建工具（Webpack/Vite）只会打包你真正使用的那门语言，而不会扫描整个 `./locales` 目录。
+你可以通过 `languages` 配置项来指定**仅打包**需要的语言。这比手动使用 Lite 版本更方便，因为它依然保留了 `init()` 和 `initAsync()` 的全自动加载能力，同时大幅减少产物体积。
+
+#### Vite 配置 (`vite.config.js`)
+```javascript
+vitePlugin({
+  languages: ['zh-hans', 'en'] // 最终产物仅包含中、英语言包
+})
+```
+
+#### Webpack 配置 (`webpack.config.js`)
+```javascript
+{
+  loader: loader,
+  options: {
+    languages: ['zh-hans', 'ja'] // 最终产物仅包含中、日语言包
+  }
+}
+```
+
+> [!TIP]
+> **极致优化 (Lite 版本)**: 如果你连按需打包的代码注入也不想要，可以完全绕过 `index.js`，手动导入 JSON 并调用 `setMessages`。详见下文：
 
 ```javascript
-// 1. 从 /lite 入口导入
+// 1. 从 /lite 入口导入 (不含任何动态加载逻辑)
 import { setMessages } from 'monaco-editor-nls-adapter/lite';
 
-// 2. 手动导入特定的语言 JSON (由你自己决定包含哪门语言)
+// 2. 手动导入特定的语言 JSON
 import zhHans from 'monaco-editor-nls-adapter/locales/zh-hans.json';
 
 // 3. 初始化 (必须要在 monaco 加载前运行)
 setMessages(zhHans, 'zh-hans');
-
-// 4. 正常使用 monaco-editor
-import * as monaco from 'monaco-editor';
 ```
 
 ## 📖 使用指南

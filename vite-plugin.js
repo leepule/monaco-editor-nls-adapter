@@ -1,25 +1,50 @@
 const { transform } = require('./transform')
+const { generateLocalesCode } = require('./codegen')
 
 /**
  * Vite Plugin for Monaco Editor NLS Adapter
  * @param {Object} options 插件配置
  * @param {string} options.monacoPath 匹配 Monaco Editor ESM 路径的特征字符串，默认为 'monaco-editor/esm'
+ * @param {string[]} options.languages 需要包含的语言包列表 (如 ['zh-hans', 'en'])。不传则全量打包。
  */
 function monacoNlsPlugin(options = {}) {
   const monacoRoot = options.monacoPath || 'monaco-editor/esm'
-  
+  const languages = Array.isArray(options.languages) ? options.languages : null
+
   return {
     name: 'vite-plugin-monaco-nls-adapter',
     enforce: 'pre',
     transform(code, id) {
-      // 极致性能优化：第一层极速过滤，避免非目标文件的正则与替换开销
-      if (!id.endsWith('.js') || id.indexOf('monaco-editor') === -1) return
+      if (!id.endsWith('.js')) return
 
       // 统一路径格式
       const normalizedId = id.replace(/\\/g, '/')
-      
-      // 快速过滤非目标文件 (进一步细化)
-      if (normalizedId.includes(monacoRoot)) {
+
+      // 1. 处理适配器自身的 index.js (按需打包语言包)
+      if (languages && (normalizedId.endsWith('monaco-editor-nls-adapter/index.js') || normalizedId.endsWith('monaco-editor-nls-adapter/index.ts'))) {
+        let newCode = code
+        
+        // 替换同步 require
+        const syncCode = generateLocalesCode(languages, false)
+        if (syncCode) {
+          newCode = newCode.replace(/require\(`\.\/locales\/\$\{targetLocale\}\.json`\)/g, syncCode)
+        }
+
+        // 替换异步 import
+        const asyncCode = generateLocalesCode(languages, true)
+        if (asyncCode) {
+          // 注意：index.js 中的 import 是带注释的: import(/* webpackChunkName: "nls-[request]" */ `./locales/${targetLocale}.json`)
+          newCode = newCode.replace(/import\(.*?\`\.\/locales\/\$\{targetLocale\}\.json\`\)/g, asyncCode)
+        }
+
+        return {
+          code: newCode,
+          map: null // 对于这种简单的替换，暂不生成 sourcemap 以保持性能
+        }
+      }
+
+      // 2. 处理 Monaco Editor 源代码 (注入本地化逻辑)
+      if (normalizedId.indexOf('monaco-editor') !== -1 && normalizedId.includes(monacoRoot)) {
         const result = transform(code, id, options)
         
         // 如果 transform 返回的是对象 ({ code, map })，直接返回

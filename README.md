@@ -113,14 +113,34 @@ export default defineConfig({
 });
 ```
 
-### 4. Bundle Optimization (Optional)
+### 4. On-demand Packaging (Recommended)
 
-If you are concerned about bundle size or the "Stat size" reported by bundle analyzers, you can use the **Lite Version**. 
+By default, the adapter's entry point contains dynamic references that may cause bundlers to include all available locales (~13MB total stat size).
 
-The default entry point uses dynamic `require`/`import` with template strings, which may cause build tools (Webpack/Vite) to scan and include all available locales or report a large "original size." The Lite version eliminates this by providing only the core logic.
+You can use the `languages` option to specify **only** the languages you need. This is easier than the Lite version because it retains the full automation of `init()` and `initAsync()` while significantly reducing the bundle size.
+
+#### Vite Configuration (`vite.config.js`)
+```javascript
+vitePlugin({
+  languages: ['zh-hans', 'en'] // Only include Simplified Chinese and English
+})
+```
+
+#### Webpack Configuration (`webpack.config.js`)
+```javascript
+{
+  loader: loader,
+  options: {
+    languages: ['zh-hans', 'ja'] // Only include Simplified Chinese and Japanese
+  }
+}
+```
+
+> [!TIP]
+> **Extreme Optimization (Lite Version)**: If you want zero code injection, you can bypass the main entry point entirely and use the Lite version. See below:
 
 ```javascript
-// 1. Import from /lite
+// 1. Import from /lite (No dynamic loading logic included)
 import { setMessages } from 'monaco-editor-nls-adapter/lite';
 
 // 2. Manually import ONLY the language you need
@@ -128,9 +148,6 @@ import zhHans from 'monaco-editor-nls-adapter/locales/zh-hans.json';
 
 // 3. Initialize BEFORE monaco-editor loads
 setMessages(zhHans, 'zh-hans');
-
-// 4. Import monaco-editor as usual
-import * as monaco from 'monaco-editor';
 ```
 
 ## 📖 Usage

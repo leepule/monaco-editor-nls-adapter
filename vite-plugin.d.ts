@@ -16,6 +16,14 @@ declare namespace monacoNlsPlugin {
      * Matches npm, pnpm, and yarn local paths automatically if using default 'monaco-editor'.
      */
     monacoPath?: string;
+
+    /**
+     * 需要包含在最终产物中的语言包列表。
+     * [Optional] List of languages to include in the bundle (e.g. ['zh-hans', 'en']).
+     * 如果不指定，则默认包含所有可用的语言包。
+     * If not specified, all available language packs will be included.
+     */
+    languages?: string[];
   }
 }
 
