@@ -41,6 +41,7 @@
     "loader.js",
     "proxy.js",
     "transform.js",
+    "codegen.js",
     "vite-plugin.js",
     "locales/",
     "README.md",
