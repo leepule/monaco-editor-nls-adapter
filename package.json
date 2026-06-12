@@ -18,7 +18,8 @@
     },
     "./proxy": {
       "types": "./proxy.d.ts",
-      "require": "./proxy.js"
+      "require": "./proxy.js",
+      "default": "./proxy.js"
     },
     "./loader": {
       "types": "./loader.d.ts",

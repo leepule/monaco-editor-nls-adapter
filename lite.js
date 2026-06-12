@@ -39,5 +39,6 @@ module.exports = {
   proxy,
   // 插件导出 (仍保留，以便用户可以从 lite 引用所有工具)
   vitePlugin: require('./vite-plugin'),
-  loader: __dirname + '/loader.js'
+  // __dirname 仅在 Node 环境存在；浏览器端打包时需要兜底，避免运行时 ReferenceError
+  loader: (typeof __dirname !== 'undefined' ? __dirname : '') + '/loader.js'
 }
