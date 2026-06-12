@@ -71,6 +71,9 @@
     "url": "https://github.com/leepule/monaco-editor-nls-adapter/issues"
   },
   "homepage": "https://github.com/leepule/monaco-editor-nls-adapter#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "peerDependencies": {
     "monaco-editor": ">= 0.50.0"
   },
