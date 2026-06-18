@@ -50,28 +50,47 @@ function testTransform() {
   const id = '/project/node_modules/.pnpm/monaco-editor@0.52.0/node_modules/monaco-editor/esm/vs/editor/common/editorContextKeys.js'
   const source = `import * as nls from '../../../nls.js';\nnls.localize('key', 'default');`
   
-  const result = transform(source, id)
+  const result = transform(source, id, { monacoPath: 'monaco-editor/esm' })
+  const transformedCode = typeof result === 'string' ? result : result.code
   
-  assert.ok(result.includes("monaco-editor-nls-adapter/proxy"), 'Should replace nls.js with proxy path')
-  assert.ok(result.includes("nls.localize('vs/editor/common/editorContextKeys', "), 'Should inject module path')
+  assert.ok(transformedCode.includes("monaco-editor-nls-adapter/proxy"), 'Should replace nls.js with proxy path')
+  assert.ok(transformedCode.includes("nls.localize('vs/editor/common/editorContextKeys', "), 'Should inject module path')
   
   // 测试 require
   const source2 = `const nls = require('../../nls.js');\nnls.localize2('key', 'default');`
-  const result2 = transform(source2, id)
-  assert.ok(result2.includes("require('monaco-editor-nls-adapter/proxy')"), 'Should replace require with proxy path')
-  assert.ok(result2.includes("nls.localize2('vs/editor/common/editorContextKeys', "), 'Should inject module path in localize2')
+  const result2 = transform(source2, id, { monacoPath: 'monaco-editor/esm' })
+  const transformedCode2 = typeof result2 === 'string' ? result2 : result2.code
+  assert.ok(transformedCode2.includes("require('monaco-editor-nls-adapter/proxy')"), 'Should replace require with proxy path')
+  assert.ok(transformedCode2.includes("nls.localize2('vs/editor/common/editorContextKeys', "), 'Should inject module path in localize2')
   
   console.log('✅ transform test passed')
 }
 
-try {
-  testFormat()
-  testLocalizeFallback()
-  testAdapterAPI()
-  testTransform()
-  console.log('\nAll tests passed successfully! 🎉')
-} catch (err) {
-  console.error('\n❌ Test failed:')
-  console.error(err)
-  process.exit(1)
+async function testInitAsyncConcurrency() {
+  console.log('Testing initAsync concurrency...')
+  const first = adapter.initAsync('not-a-real-locale')
+  const second = adapter.initAsync('not-a-real-locale')
+
+  assert.strictEqual(first, second, 'Concurrent initAsync calls for the same locale should reuse the same Promise')
+
+  const [firstResult, secondResult] = await Promise.all([first, second])
+  assert.strictEqual(firstResult, false, 'Invalid locale should resolve to false')
+  assert.strictEqual(secondResult, false, 'Reused invalid locale request should resolve to the same false result')
+
+  console.log('✅ initAsync concurrency test passed')
 }
+
+;(async () => {
+  try {
+    testFormat()
+    testLocalizeFallback()
+    testAdapterAPI()
+    testTransform()
+    await testInitAsyncConcurrency()
+    console.log('\nAll tests passed successfully! 🎉')
+  } catch (err) {
+    console.error('\n❌ Test failed:')
+    console.error(err)
+    process.exit(1)
+  }
+})()

@@ -1,5 +1,5 @@
 const { transform } = require('./transform')
-const { generateLocalesCode } = require('./codegen')
+const { replaceLocaleLoaders } = require('./codegen')
 
 /**
  * Vite Plugin for Monaco Editor NLS Adapter
@@ -24,23 +24,8 @@ function monacoNlsPlugin(options = {}) {
 
       // 1. 处理适配器自身的 index.js (按需打包语言包)
       if (languages && (normalizedId.endsWith('monaco-editor-nls-adapter/index.js') || normalizedId.endsWith('monaco-editor-nls-adapter/index.ts'))) {
-        let newCode = code
-        
-        // 替换同步 require
-        const syncCode = generateLocalesCode(languages, false)
-        if (syncCode) {
-          newCode = newCode.replace(/require\(`\.\/locales\/\$\{targetLocale\}\.json`\)/g, syncCode)
-        }
-
-        // 替换异步 import
-        const asyncCode = generateLocalesCode(languages, true)
-        if (asyncCode) {
-          // 注意：index.js 中的 import 是带注释的: import(/* webpackChunkName: "nls-[request]" */ `./locales/${targetLocale}.json`)
-          newCode = newCode.replace(/import\(.*?\`\.\/locales\/\$\{targetLocale\}\.json\`\)/g, asyncCode)
-        }
-
         return {
-          code: newCode,
+          code: replaceLocaleLoaders(code, languages),
           map: null // 对于这种简单的替换，暂不生成 sourcemap 以保持性能
         }
       }

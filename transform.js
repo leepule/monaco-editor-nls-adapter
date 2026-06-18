@@ -13,10 +13,11 @@ const LOCALIZE_REGEX = /nls\.localize(\d?)\(/g
 function transform(source, id, options = {}) {
   // 统一路径分隔符
   const resourcePath = id.replace(/\\/g, '/')
+  const hasCustomMonacoPath = typeof options.monacoPath === 'string' && options.monacoPath.length > 0
   let monacoRoot = options.monacoPath || 'monaco-editor/esm'
 
   // 4. 自动路径探测增强：如果是默认路径且在 node_modules 中，尝试自动定位物理路径
-  if (monacoRoot === 'monaco-editor/esm' && !CACHED_MONACO_ROOT) {
+  if (!hasCustomMonacoPath && monacoRoot === 'monaco-editor/esm' && !CACHED_MONACO_ROOT) {
     try {
       // 尝试自动定位 monaco-editor 的安装目录 (适配 pnpm, npm, yarn)
       const pkgPath = require.resolve('monaco-editor/package.json', { paths: [process.cwd()] })
@@ -27,7 +28,7 @@ function transform(source, id, options = {}) {
   }
 
   // 优先匹配物理路径，否则回退到特征字符串匹配
-  const matchPath = CACHED_MONACO_ROOT || monacoRoot
+  const matchPath = hasCustomMonacoPath ? monacoRoot : (CACHED_MONACO_ROOT || monacoRoot)
 
   if (resourcePath.includes(matchPath)) {
     // 计算模块路径 (相对于 esm 目录)

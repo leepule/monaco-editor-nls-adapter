@@ -2,13 +2,9 @@ import * as nlsAdapter from 'monaco-editor-nls-adapter'
 // `?worker` 导入只生成 Worker 构造器，不会在主线程求值 monaco 模块，
 // 因此放在顶层是安全的，不会抢在语言包初始化之前固化英文文案
 import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 self.MonacoEnvironment = {
-  getWorker(_, label) {
-    if (label === 'typescript' || label === 'javascript') {
-      return new TsWorker()
-    }
+  getWorker() {
     return new EditorWorker()
   }
 }
@@ -54,7 +50,12 @@ async function bootstrap() {
       : '语言包加载失败，已回退英文'
   }
 
-  const monaco = await import('monaco-editor')
+  // Demo 只需要展示编辑器 UI 本地化和 JavaScript 基础高亮，
+  // 因此避免走 monaco-editor 的全量入口，减少 dev 请求数和首屏体积。
+  const [monaco] = await Promise.all([
+    import('monaco-editor/esm/vs/editor/edcore.main.js'),
+    import('monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js')
+  ])
 
   monaco.editor.create(document.getElementById('editor'), {
     value: SAMPLE_CODE,

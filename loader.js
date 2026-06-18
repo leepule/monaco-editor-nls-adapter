@@ -1,5 +1,5 @@
 const { transform } = require('./transform')
-const { generateLocalesCode } = require('./codegen')
+const { replaceLocaleLoaders } = require('./codegen')
 
 /**
  * Webpack Loader for Monaco Editor NLS Adapter
@@ -22,21 +22,7 @@ module.exports = function (source) {
 
   // 2. 处理适配器自身的 index.js (按需打包语言包)
   if (isAdapter && languages) {
-    let newCode = source
-    
-    // 替换同步 require
-    const syncCode = generateLocalesCode(languages, false)
-    if (syncCode) {
-      newCode = newCode.replace(/require\(`\.\/locales\/\$\{targetLocale\}\.json`\)/g, syncCode)
-    }
-
-    // 替换异步 import
-    const asyncCode = generateLocalesCode(languages, true)
-    if (asyncCode) {
-      newCode = newCode.replace(/import\(.*?\`\.\/locales\/\$\{targetLocale\}\.json\`\)/g, asyncCode)
-    }
-
-    return newCode
+    return replaceLocaleLoaders(source, languages)
   }
 
   // 3. 处理 Monaco Editor 源代码 (注入本地化逻辑)

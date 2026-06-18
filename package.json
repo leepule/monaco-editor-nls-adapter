@@ -1,6 +1,6 @@
 {
   "name": "monaco-editor-nls-adapter",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "description": "Multi-language NLS adapter for Monaco Editor 0.50.0+ (Self-hosted)",
   "main": "index.js",
   "module": "index.js",
@@ -13,6 +13,7 @@
       "require": "./index.js"
     },
     "./lite": {
+      "types": "./lite.d.ts",
       "import": "./lite.js",
       "require": "./lite.js"
     },
@@ -39,18 +40,25 @@
     "index.js",
     "lite.js",
     "index.d.ts",
+    "lite.d.ts",
     "loader.js",
+    "loader.d.ts",
     "proxy.js",
+    "proxy.d.ts",
     "transform.js",
+    "transform.d.ts",
     "codegen.js",
+    "scripts/",
     "vite-plugin.js",
+    "vite-plugin.d.ts",
     "locales/",
     "README.md",
     "README_zh.md"
   ],
   "scripts": {
-    "minify-locales": "for f in locales/*.json; do jq -c . \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"; done",
-    "prepublishOnly": "npm run minify-locales"
+    "minify-locales": "node scripts/minify-locales.js",
+    "prepublishOnly": "npm run minify-locales",
+    "test": "node tests/simple.test.js && node tests/verify-on-demand.js"
   },
   "keywords": [
     "monaco-editor",

@@ -1,47 +1,52 @@
-const { generateLocalesCode } = require('../codegen');
-const assert = require('assert');
+const { generateLocalesCode, replaceLocaleLoaders } = require('../codegen')
+const assert = require('assert')
 
-console.log('Testing codegen...');
+console.log('Testing codegen...')
 
-const syncCode = generateLocalesCode(['zh-hans', 'en'], false);
-console.log('Sync code:', syncCode);
-assert(syncCode.includes("'zh-hans': () => require('./locales/zh-hans.json')"));
-assert(syncCode.includes("'en': () => require('./locales/en.json')"));
-assert(!syncCode.includes("'ja'"));
+const syncCode = generateLocalesCode(['zh-hans', 'en'], false)
+console.log('Sync code:', syncCode)
+assert(syncCode.includes("'zh-hans': () => require('./locales/zh-hans.json')"))
+assert(syncCode.includes("'en': () => require('./locales/en.json')"))
+assert(!syncCode.includes("'ja'"))
 
-const asyncCode = generateLocalesCode(['zh-hans', 'ja'], true);
-console.log('Async code:', asyncCode);
-assert(asyncCode.includes("'zh-hans': () => import('./locales/zh-hans.json')"));
-assert(asyncCode.includes("'ja': () => import('./locales/ja.json')"));
-assert(!asyncCode.includes("'en'"));
+const asyncCode = generateLocalesCode(['zh-hans', 'ja'], true)
+console.log('Async code:', asyncCode)
+assert(asyncCode.includes("'zh-hans': () => import('./locales/zh-hans.json')"))
+assert(asyncCode.includes("'ja': () => import('./locales/ja.json')"))
+assert(!asyncCode.includes("'en'"))
 
-console.log('Codegen test passed!');
+console.log('Codegen test passed!')
 
 // Mock index.js content
 const indexContent = `
+function SYNC_LOCALE_LOADER(locale) {
+  return require(\`./locales/\${locale}.json\`)
+}
+
+function ASYNC_LOCALE_LOADER(locale) {
+  return import(/* webpackChunkName: "nls-[request]" */ \`./locales/\${locale}.json\`)
+}
+
 function init(locale) {
   const targetLocale = locale || 'zh-hans';
-  const data = require(\`./locales/\${targetLocale}.json\`)
+  const data = SYNC_LOCALE_LOADER(targetLocale)
   return data;
 }
 async function initAsync(locale) {
   const targetLocale = locale || 'zh-hans';
-  const module = await import(/* webpackChunkName: "nls-[request]" */ \`./locales/\${targetLocale}.json\`)
+  const module = await ASYNC_LOCALE_LOADER(targetLocale)
   return module;
 }
-`;
+`
 
-console.log('Testing regex replacement...');
-const languages = ['zh-hans'];
-const newSyncCode = generateLocalesCode(languages, false);
-const newAsyncCode = generateLocalesCode(languages, true);
+console.log('Testing marker replacement...')
+const languages = ['zh-hans']
+const transformed = replaceLocaleLoaders(indexContent, languages)
 
-let transformed = indexContent.replace(/require\(\`\.\/locales\/\$\{targetLocale\}\.json\`\)/g, newSyncCode);
-transformed = transformed.replace(/import\(.*?\`\.\/locales\/\$\{targetLocale\}\.json\`\)/g, newAsyncCode);
+console.log('Transformed content:', transformed)
+assert(transformed.includes("'zh-hans': () => require('./locales/zh-hans.json')"))
+assert(transformed.includes("'zh-hans': () => import('./locales/zh-hans.json')"))
+assert(!transformed.includes("return require(`./locales/${locale}.json`)"))
+assert(!transformed.includes("return import(/* webpackChunkName: \"nls-[request]\" */ `./locales/${locale}.json`)"))
 
-console.log('Transformed content:', transformed);
-assert(transformed.includes("'zh-hans': () => require('./locales/zh-hans.json')"));
-assert(transformed.includes("'zh-hans': () => import('./locales/zh-hans.json')"));
-assert(!transformed.includes('targetLocale}.json'));
-
-console.log('Regex replacement test passed!');
+console.log('Marker replacement test passed!')

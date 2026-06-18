@@ -31,6 +31,35 @@ const LOCALE_MAP = {
 }
 
 let IS_LOADING = false
+let LOADING_PROMISE = null
+let LOADING_LOCALE = ''
+
+function SYNC_LOCALE_LOADER(locale) {
+  return require(`./locales/${locale}.json`)
+}
+
+function ASYNC_LOCALE_LOADER(locale) {
+  return import(/* webpackChunkName: "nls-[request]" */ `./locales/${locale}.json`)
+}
+
+function resolveLocale(locale) {
+  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined'
+  let nextLocale = locale
+
+  if (!nextLocale && isBrowser) {
+    nextLocale = navigator.language || navigator.userLanguage
+  }
+
+  let targetLocale = (nextLocale || 'zh-hans').toLowerCase()
+  if (LOCALE_MAP[targetLocale]) {
+    targetLocale = LOCALE_MAP[targetLocale]
+  }
+
+  return {
+    isBrowser,
+    targetLocale
+  }
+}
 
 /**
  * 使用指定的语言代码初始化 Monaco Editor 的本地化。
@@ -39,23 +68,15 @@ let IS_LOADING = false
  * @param {boolean} force 是否强制重新初始化
  */
 function init(locale, force = false) {
-  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined'
-  if (!locale && isBrowser) {
-    locale = navigator.language || navigator.userLanguage
-  }
-
-  let targetLocale = (locale || 'zh-hans').toLowerCase()
-  if (LOCALE_MAP[targetLocale]) {
-    targetLocale = LOCALE_MAP[targetLocale]
-  }
+  const { isBrowser, targetLocale } = resolveLocale(locale)
 
   if (lite.getCurrentLocale() === targetLocale && !force) {
     return true
   }
 
   try {
-    // 这里的动态 require 是导致全量打包的主要原因，若需精简请改用 lite.setMessages()
-    const data = require(`./locales/${targetLocale}.json`)
+    // 这里的占位表达式会在构建期由 loader/plugin 替换为按需语言分发表。
+    const data = SYNC_LOCALE_LOADER(targetLocale)
     lite.setMessages(data, targetLocale)
     return true
   } catch (e) {
@@ -71,36 +92,37 @@ function init(locale, force = false) {
  * @param {string} locale 语言代码
  * @param {boolean} force 是否强制重新初始化
  */
-async function initAsync(locale, force = false) {
-  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined'
-  if (!locale && isBrowser) {
-    locale = navigator.language || navigator.userLanguage
-  }
-
-  let targetLocale = (locale || 'zh-hans').toLowerCase()
-  if (LOCALE_MAP[targetLocale]) {
-    targetLocale = LOCALE_MAP[targetLocale]
-  }
+function initAsync(locale, force = false) {
+  const { isBrowser, targetLocale } = resolveLocale(locale)
 
   if (lite.getCurrentLocale() === targetLocale && !force) {
-    return true
+    return Promise.resolve(true)
   }
 
-  if (IS_LOADING && !force) return false
+  if (IS_LOADING && !force && LOADING_LOCALE === targetLocale && LOADING_PROMISE) {
+    return LOADING_PROMISE
+  }
+
   IS_LOADING = true
+  LOADING_LOCALE = targetLocale
+  LOADING_PROMISE = ASYNC_LOCALE_LOADER(targetLocale)
+    .then((module) => {
+      lite.setMessages(module.default || module, targetLocale)
+      return true
+    })
+    .catch((e) => {
+      if (isBrowser) {
+        console.warn(`[monaco-editor-nls-adapter] 无法异步加载语言包: ${targetLocale}`, e)
+      }
+      return false
+    })
+    .finally(() => {
+      IS_LOADING = false
+      LOADING_PROMISE = null
+      LOADING_LOCALE = ''
+    })
 
-  try {
-    const module = await import(/* webpackChunkName: "nls-[request]" */ `./locales/${targetLocale}.json`)
-    lite.setMessages(module.default || module, targetLocale)
-    return true
-  } catch (e) {
-    if (isBrowser) {
-      console.warn(`[monaco-editor-nls-adapter] 无法异步加载语言包: ${targetLocale}`, e)
-    }
-    return false
-  } finally {
-    IS_LOADING = false
-  }
+  return LOADING_PROMISE
 }
 
 module.exports = {
