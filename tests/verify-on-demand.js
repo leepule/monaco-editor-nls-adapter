@@ -28,13 +28,13 @@ function ASYNC_LOCALE_LOADER(locale) {
 }
 
 function init(locale) {
-  const targetLocale = locale || 'zh-hans';
-  const data = SYNC_LOCALE_LOADER(targetLocale)
+  const currentLocale = locale || 'zh-hans';
+  const data = SYNC_LOCALE_LOADER(currentLocale)
   return data;
 }
 async function initAsync(locale) {
-  const targetLocale = locale || 'zh-hans';
-  const module = await ASYNC_LOCALE_LOADER(targetLocale)
+  const currentLocale = locale || 'zh-hans';
+  const module = await ASYNC_LOCALE_LOADER(currentLocale)
   return module;
 }
 `
@@ -48,5 +48,18 @@ assert(transformed.includes("'zh-hans': () => require('./locales/zh-hans.json')"
 assert(transformed.includes("'zh-hans': () => import('./locales/zh-hans.json')"))
 assert(!transformed.includes("return require(`./locales/${locale}.json`)"))
 assert(!transformed.includes("return import(/* webpackChunkName: \"nls-[request]\" */ `./locales/${locale}.json`)"))
+
+// 运行 eval 来测试 transformed 代码是否会因为没有声明 targetLocale 而抛出 ReferenceError 
+try {
+  const runTest = new Function('require', `
+    ${transformed}
+    return init('zh-hans');
+  `);
+  // 提供一个 mock require 函数避免实际去 require 报错
+  runTest(() => ({}));
+} catch (e) {
+  console.error('Eval failed:', e)
+  assert.fail('Eval failed, maybe targetLocale is not defined: ' + e.message)
+}
 
 console.log('Marker replacement test passed!')

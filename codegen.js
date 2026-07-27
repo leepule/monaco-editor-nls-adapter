@@ -21,7 +21,7 @@ ${map}
       };
       if (locales[locale]) return await locales[locale]();
       throw new Error('[monaco-editor-nls-adapter] Locale not bundled: ' + locale);
-    })(targetLocale)`
+    })(locale)`
   } else {
     // 同步版本 (用于 init)
     const map = languages.map(lang => `  '${lang}': () => require('./locales/${lang}.json')`).join(',\n')
@@ -31,7 +31,7 @@ ${map}
       };
       if (locales[locale]) return locales[locale]();
       throw new Error('[monaco-editor-nls-adapter] Locale not bundled: ' + locale);
-    })(targetLocale)`
+    })(locale)`
   }
 }
 
